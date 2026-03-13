@@ -1,6 +1,99 @@
 // popup.js - 主逻辑
 let aiService = null;
 
+const RED = true;
+const BLACK = false;
+
+class RBNode {
+  constructor(key, value, color) {
+    this.key = key;
+    this.value = value;
+    this.color = color;
+    this.left = null;
+    this.right = null;
+  }
+}
+
+class RBTree {
+  constructor(compare) {
+    this.root = null;
+    this.compare = compare || ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  }
+
+  isRed(node) {
+    return !!node && node.color === RED;
+  }
+
+  rotateLeft(h) {
+    const x = h.right;
+    h.right = x.left;
+    x.left = h;
+    x.color = h.color;
+    h.color = RED;
+    return x;
+  }
+
+  rotateRight(h) {
+    const x = h.left;
+    h.left = x.right;
+    x.right = h;
+    x.color = h.color;
+    h.color = RED;
+    return x;
+  }
+
+  flipColors(h) {
+    h.color = !h.color;
+    if (h.left) h.left.color = !h.left.color;
+    if (h.right) h.right.color = !h.right.color;
+  }
+
+  get(key) {
+    let x = this.root;
+    while (x) {
+      const cmp = this.compare(key, x.key);
+      if (cmp === 0) return x.value;
+      if (cmp < 0) x = x.left;
+      else x = x.right;
+    }
+    return null;
+  }
+
+  put(key, value) {
+    this.root = this._put(this.root, key, value);
+    if (this.root) this.root.color = BLACK;
+  }
+
+  _put(h, key, value) {
+    if (!h) return new RBNode(key, value, RED);
+    const cmp = this.compare(key, h.key);
+    if (cmp < 0) h.left = this._put(h.left, key, value);
+    else if (cmp > 0) h.right = this._put(h.right, key, value);
+    else h.value = value;
+
+    if (this.isRed(h.right) && !this.isRed(h.left)) h = this.rotateLeft(h);
+    if (this.isRed(h.left) && this.isRed(h.left.left)) h = this.rotateRight(h);
+    if (this.isRed(h.left) && this.isRed(h.right)) this.flipColors(h);
+    return h;
+  }
+
+  toArray() {
+    const out = [];
+    const walk = (node) => {
+      if (!node) return;
+      walk(node.left);
+      out.push(node.value);
+      walk(node.right);
+    };
+    walk(this.root);
+    return out;
+  }
+}
+
+let cacheTree = new RBTree();
+let cacheList = [];
+let historyList = [];
+
 async function initAIService() {
   if (aiService) return aiService;
   try {
@@ -33,11 +126,16 @@ document.addEventListener('DOMContentLoaded', async function() {
   const resultContent = document.getElementById('resultContent');
   const loading = document.getElementById('loading');
   const settingsBtn = document.getElementById('settingsBtn');
+  const historySection = document.getElementById('historySection');
+  const historyListEl = document.getElementById('historyList');
+  const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
   if (!inputText || !explainBtn) {
     console.error('❌ 找不到必要的DOM元素');
     return;
   }
+
+  await loadCacheAndHistory();
 
   // 检查API Key
   chrome.storage.local.get(['apiKey'], (result) => {
@@ -94,10 +192,18 @@ document.addEventListener('DOMContentLoaded', async function() {
       return;
     }
 
+    const key = normalizeKey(text);
+    const cached = cacheTree.get(key);
+    if (cached && cached.explanation) {
+      showResult(cached.explanation);
+      resultSection.classList.remove('hidden');
+      updateHistory(key, cached.text || text);
+      return;
+    }
+
     loading.classList.remove('hidden');
     resultSection.classList.remove('hidden');
     resultContent.innerHTML = '<div style="text-align:center; padding:20px;">⏳ AI思考中...</div>';
-    saveToHistory(text);
 
     try {
       const service = await initAIService();
@@ -116,6 +222,8 @@ document.addEventListener('DOMContentLoaded', async function() {
       }
       const explanation = await service.explainText(text, { detailLevel: 'detailed' });
       showResult(explanation);
+      upsertCache(key, text, explanation);
+      updateHistory(key, text);
       updateUsageStats();
     } catch (error) {
       console.error('AI解释失败：', error);
@@ -134,6 +242,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         showMockResult(text, errorMessage);
+        updateHistory(key, text);
     } finally {
       loading.classList.add('hidden');
     }
@@ -169,6 +278,45 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
 
+  if (historyListEl) {
+    historyListEl.addEventListener('click', (event) => {
+      const item = event.target.closest('.history-item');
+      if (!item) return;
+      const key = item.dataset.key;
+      const cached = cacheTree.get(key);
+      const expandEl = item.querySelector('.history-expand');
+      const termText = item.querySelector('.history-term')?.textContent || '';
+
+      Array.from(historyListEl.children).forEach((el) => {
+        if (el !== item) el.classList.remove('expanded');
+      });
+
+      if (item.classList.contains('expanded')) {
+        item.classList.remove('expanded');
+        return;
+      }
+
+      inputText.value = cached?.text || termText;
+      inputText.focus();
+      if (cached && cached.explanation) {
+        expandEl.innerHTML = cached.explanation;
+        showResult(cached.explanation);
+        resultSection.classList.remove('hidden');
+      } else {
+        expandEl.innerHTML = '<em>暂无缓存，点击“✨ Ask AI”获取</em>';
+      }
+      item.classList.add('expanded');
+    });
+  }
+
+  if (clearHistoryBtn) {
+    clearHistoryBtn.addEventListener('click', async () => {
+      historyList = [];
+      await setStorage({ history: historyList });
+      renderHistory();
+    });
+  }
+
   function showResult(html) {
     resultContent.innerHTML = html;
   }
@@ -190,16 +338,104 @@ document.addEventListener('DOMContentLoaded', async function() {
     resultContent.innerHTML = mockHtml;
   }
 
-  function saveToHistory(text) {
-    chrome.storage.local.get(['history'], (result) => {
-      const history = result.history || [];
-      history.unshift({
-        text: text.substring(0, 50),
-        timestamp: new Date().toLocaleString()
-      });
-      if (history.length > 10) history.pop();
-      chrome.storage.local.set({ history });
+  function normalizeKey(text) {
+    return text.trim();
+  }
+
+  function escapeHtml(text) {
+    const safeText = String(text ?? '');
+    return safeText
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function buildTreeFromList(list) {
+    const tree = new RBTree();
+    list.forEach((entry) => {
+      if (entry && entry.key) tree.put(entry.key, entry);
     });
+    cacheTree = tree;
+  }
+
+  function updateHistory(key, text) {
+    const timestamp = new Date().toLocaleString();
+    historyList = historyList.filter((item) => item.key !== key);
+    historyList.unshift({
+      key,
+      text: text.substring(0, 50),
+      timestamp
+    });
+    if (historyList.length > 10) historyList = historyList.slice(0, 10);
+    setStorage({ history: historyList });
+    renderHistory();
+  }
+
+  function upsertCache(key, text, explanation) {
+    const now = Date.now();
+    const index = cacheList.findIndex((item) => item.key === key);
+    if (index >= 0) {
+      cacheList[index] = {
+        ...cacheList[index],
+        text: text.substring(0, 200),
+        explanation,
+        updatedAt: now
+      };
+    } else {
+      cacheList.unshift({
+        key,
+        text: text.substring(0, 200),
+        explanation,
+        updatedAt: now
+      });
+    }
+    if (cacheList.length > 100) cacheList = cacheList.slice(0, 100);
+    buildTreeFromList(cacheList);
+    setStorage({ explainCache: cacheList });
+  }
+
+  async function loadCacheAndHistory() {
+    const result = await getStorage(['explainCache', 'history']);
+    cacheList = result.explainCache || [];
+    historyList = result.history || [];
+    buildTreeFromList(cacheList);
+    renderHistory();
+  }
+
+  function renderHistory() {
+    if (!historySection || !historyListEl) return;
+    if (!historyList.length) {
+      historySection.classList.add('hidden');
+      historyListEl.innerHTML = '';
+      return;
+    }
+    historySection.classList.remove('hidden');
+    const items = historyList.slice(0, 5);
+    historyListEl.innerHTML = items.map((item) => {
+      const key = item.key || normalizeKey(item.text || '');
+      if (!key) return '';
+      const safeText = escapeHtml(item.text || key);
+      const safeTime = escapeHtml(item.timestamp || '');
+      return `
+        <div class="history-item" data-key="${escapeHtml(key)}">
+          <div class="history-item-row">
+            <span class="history-term" title="${safeText}">${safeText}</span>
+            <span class="history-time">${safeTime}</span>
+          </div>
+          <div class="history-expand">点击展开</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function getStorage(keys) {
+    return new Promise((resolve) => chrome.storage.local.get(keys, resolve));
+  }
+
+  function setStorage(values) {
+    return new Promise((resolve) => chrome.storage.local.set(values, resolve));
   }
 
   function updateUsageStats() {
