@@ -2,14 +2,18 @@
 class AIService {
   constructor() {
     this.apiKey = null;
+    this.provider = 'deepseek';
     this.baseURL = 'https://api.deepseek.com/v1';
     this.model = 'deepseek-chat';
+    this.geminiBaseURL = 'https://generativelanguage.googleapis.com/v1beta';
+    this.geminiModel = 'gemini-2.5-flash';
   }
 
   async loadApiKey() {
     return new Promise((resolve) => {
-      chrome.storage.local.get(['apiKey'], (result) => {
-        this.apiKey = result.apiKey || '';
+      chrome.storage.local.get(['apiKey', 'geminiApiKey', 'provider'], (result) => {
+        this.provider = result.provider || 'deepseek';
+        this.apiKey = this.provider === 'gemini' ? (result.geminiApiKey || '') : (result.apiKey || '');
         resolve(this.apiKey);
       });
     });
@@ -36,7 +40,16 @@ class AIService {
         ? 'You are a concise explainer. Reply with 1 line summary and up to 2 bullets. No examples.'
         : '你是精简解释助手。只要一句话总结 + 不超过2个要点。不要给例子。')
       : '你是一个专业的解释助手。请用简单易懂的语言解释用户输入的内容。';
+    const systemContent = `${systemHeader}
+              ${!isFast ? `格式要求：
+              1. 第一行用一句话总结
+              2. 然后分点详细解释
+              3. 最后给出相关例子` : ''}
+              ${languageHint}`;
     try {
+      if (this.provider === 'gemini') {
+        return await this.explainWithGemini(prompt, isFast, systemContent);
+      }
       const response = await fetch(`${this.baseURL}/chat/completions`, {
         method: 'POST',
         headers: {
@@ -48,12 +61,7 @@ class AIService {
           messages: [
             {
               role: 'system',
-              content: `${systemHeader}
-              ${!isFast ? `格式要求：
-              1. 第一行用一句话总结
-              2. 然后分点详细解释
-              3. 最后给出相关例子` : ''}
-              ${languageHint}`
+              content: systemContent
             },
             {
               role: 'user',
@@ -82,6 +90,40 @@ class AIService {
       console.error('Error!：', error);
       throw error;
     }
+  }
+
+  async explainWithGemini(prompt, isFast, systemContent) {
+    const response = await fetch(`${this.geminiBaseURL}/models/${this.geminiModel}:generateContent`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': this.apiKey
+      },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemContent }] },
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          maxOutputTokens: isFast ? 180 : 900,
+          temperature: isFast ? 0.1 : 0.4
+        }
+      })
+    });
+
+    if (!response.ok) {
+      let errorDetail = '';
+      try {
+        const errorData = await response.json();
+        errorDetail = JSON.stringify(errorData);
+      } catch {
+        errorDetail = await response.text();
+      }
+      throw new Error(`API Call Failure (HTTP ${response.status}): ${errorDetail}`);
+    }
+
+    const data = await response.json();
+    const parts = data.candidates?.[0]?.content?.parts || [];
+    const text = parts.map((p) => p.text || '').join('');
+    return this.formatExplanation(text);
   }
 
   buildPrompt(text, options) {

@@ -6,23 +6,19 @@
     <style>
         html {
             height: 100%;
-            /* 使用 Flexbox 布局 */
-            display: flex;
-            justify-content: center; /* 水平居中 */
-            background: #e9ecef;     /* 建议给 html 整个背景色，避免周围留白不好看 */
+            background: #eef1f6;
         }
         body {
-            width: 720px;
-            height: 820px;
-            padding: 26px;
-            border-radius: 20px;
+            min-height: 100vh;
+            padding: 24px;
+            margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f8f9fa;
+            background: #eef1f6;
         }
 
         h1 {
             font-size: 24px;
-            margin: 0 0 20px 0;
+            margin: 0 0 18px 0;
             color: #333;
             display: flex;
             gap: 10px;
@@ -57,9 +53,57 @@
             background: white;
             border-radius: 16px;
             padding: 20px;
-            margin-bottom: 20px;
+            margin: 0;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             align: center;
+            height: auto;
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .close-btn {
+            padding: 8px 14px;
+            border-radius: 999px;
+            border: 1px solid #d6dbe3;
+            background: #ffffff;
+            color: #2f3542;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .close-btn:hover {
+            background: #f2f5fa;
+        }
+
+        .section-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            align-items: stretch;
+        }
+
+        .right-column {
+            display: grid;
+            grid-template-rows: 1fr 1fr;
+            gap: 16px;
+            align-items: stretch;
+        }
+
+        .section {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
         }
 
         .section-title {
@@ -80,7 +124,8 @@
             font-weight: 500;
         }
 
-        input[type="password"] {
+        input[type="password"],
+        select {
             width: 100%;
             padding: 12px 15px;
             border: 2px solid #e0e0e0;
@@ -92,10 +137,70 @@
             font-family: monospace;
         }
 
-        input[type="password"]:focus {
+        input[type="password"]:focus,
+        select:focus {
             border-color: #4da3ff;
             outline: none;
             box-shadow: 0 0 0 3px rgba(77, 163, 255, 0.1);
+        }
+
+        .provider-wrap {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .provider-toggle {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            background: #ffffff;
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .provider-toggle:focus {
+            border-color: #4da3ff;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(77, 163, 255, 0.1);
+        }
+
+        .provider-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            width: 100%;
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            box-shadow: 0 10px 24px rgba(20, 40, 90, 0.15);
+            padding: 6px;
+            display: none;
+            z-index: 10;
+        }
+
+        .provider-menu.open {
+            display: block;
+        }
+
+        .provider-item {
+            padding: 8px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .provider-item.active,
+        .provider-item:hover {
+            background: #eef4ff;
+            color: #3563d9;
         }
 
         .button-group {
@@ -205,7 +310,7 @@
         .footer {
             display: flex;
             justify-content: flex-end;
-            margin-top: 10px;
+            margin-top: 0;
         }
         /* =========================================
    深色模式 (Dark Mode) 自动适配
@@ -213,7 +318,7 @@
 @media (prefers-color-scheme: dark) {
     /* html 背景变暗 */
     html {
-        background: #252a3d;
+        background: #1c202e;
     }
 
     body {
@@ -229,6 +334,12 @@
         background: #30334a;
     }
 
+    .close-btn {
+        background: #262c3f;
+        border-color: #3a4055;
+        color: #e6ebf5;
+    }
+
     .section {
         background: #252a3d;
         box-shadow: 0 4px 12px rgba(0,0,0,0.3); /* 深色模式下阴影稍微加深 */
@@ -238,10 +349,32 @@
         color: #aaaaaa;
     }
 
-    input[type="password"] {
+    input[type="password"],
+    select {
         background: #1e1e1e;
         border-color: #444;
         color: #ffffff;
+    }
+
+    .provider-toggle {
+        background: #1e1e1e;
+        border-color: #444;
+        color: #ffffff;
+    }
+
+    .provider-menu {
+        background: #262c3f;
+        border-color: #3a4055;
+    }
+
+    .provider-item {
+        color: #e6ebf5;
+    }
+
+    .provider-item.active,
+    .provider-item:hover {
+        background: #2f3750;
+        color: #cfe0ff;
     }
 
     /* 次要按钮变暗 */
@@ -300,77 +433,105 @@
     </style>
 </head>
 <body>
-<h1>
-    <span>⚙️</span>
-    <span data-i18n="settings_title">Settings</span>
-    <span class="lang-switch">
-        <button id="langZh" type="button">ZH</button>
-        <button id="langEn" type="button">EN</button>
-    </span>
-</h1>
-
-<div class="section">
-    <div class="section-title">
-        <span></span>
-        <span data-i18n="api_config">API Configurations</span>
-    </div>
-
-    <div class="info-box">
-        <strong data-i18n="api_info_title">DeepSeek API Key Required</strong>
-        <p style="margin: 10px 0 0 0;" data-i18n-html="api_info_body">
-            1. Visit <a href="https://platform.deepseek.com/" target="_blank">DeepSeek</a> to register<br>
-            2. Navigate to the "API Keys" page to create new keys<br>
-            3. Paste the key below<br>
-        </p>
-    </div>
-
-    <label for="apiKey" data-i18n="api_key_label">API Key：</label>
-    <input type="password" id="apiKey" placeholder="sk-..." data-i18n-placeholder="api_key_placeholder">
-
-    <div class="button-group">
-        <button class="primary-btn" id="saveBtn" data-i18n="save_key">Save Key</button>
-        <button class="secondary-btn" id="testBtn" data-i18n="test_conn">Test Connection</button>
-    </div>
-
-    <div id="status" class="status"></div>
-</div>
-
-<div class="section">
-    <div class="section-title">
-        <span data-i18n="usage_stats">Usage Statistics</span>
-    </div>
-
-    <div class="stat-item">
-        <span class="stat-label" data-i18n="time_used_today">Time used today：</span>
-        <span class="stat-value" id="todayUsage">0</span>
-    </div>
-    <div class="stat-item">
-        <span class="stat-label" data-i18n="cumulative_usage">Cumulative usage：</span>
-        <span class="stat-value" id="totalUsage">0</span>
-    </div>
-    <div class="stat-item">
-        <span class="stat-label" data-i18n="credit_remaining">Credit remaining：</span>
-        <span class="stat-value" id="remainingQuota">≈ 1M token</span>
+<div class="top-bar">
+    <h1>
+        <span>⚙️</span>
+        <span data-i18n="settings_title">Settings</span>
+    </h1>
+    <div class="top-actions">
+        <span class="lang-switch">
+            <button id="langZh" type="button">ZH</button>
+            <button id="langEn" type="button">EN</button>
+        </span>
+        <button class="close-btn" id="closeBtn" data-i18n="close">Close</button>
     </div>
 </div>
 
-<div class="section">
-    <div class="section-title">
-        <span data-i18n="hotkeys">Hotkeys</span>
+<div class="section-grid">
+    <div class="section">
+        <div class="section-title">
+            <span></span>
+            <span data-i18n="api_config">API Configurations</span>
+        </div>
+
+        <label for="providerToggle" data-i18n="provider_label">Provider：</label>
+        <div class="provider-wrap">
+            <button id="providerToggle" class="provider-toggle" type="button" aria-haspopup="listbox" aria-expanded="false">
+                DeepSeek
+                <span>▾</span>
+            </button>
+            <div id="providerMenu" class="provider-menu" role="listbox">
+                <div class="provider-item" role="option" data-value="deepseek">DeepSeek</div>
+                <div class="provider-item" role="option" data-value="gemini">Gemini</div>
+            </div>
+        </div>
+
+        <div class="info-box" id="deepseekInfoBox">
+            <strong data-i18n="api_info_title">DeepSeek API Key Required</strong>
+            <p style="margin: 10px 0 0 0;" data-i18n-html="api_info_body">
+                1. Visit <a href="https://platform.deepseek.com/" target="_blank">DeepSeek</a> to register<br>
+                2. Navigate to the "API Keys" page to create new keys<br>
+                3. Paste the key below<br>
+            </p>
+        </div>
+
+        <label for="apiKey" data-i18n="api_key_label">API Key：</label>
+        <input type="password" id="apiKey" placeholder="sk-..." data-i18n-placeholder="api_key_placeholder">
+
+        <div class="info-box" id="geminiInfoBox" style="display: none;">
+            <strong data-i18n="gemini_info_title">Gemini API Key Required</strong>
+            <p style="margin: 10px 0 0 0;" data-i18n-html="gemini_info_body">
+                1. Visit <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a> to get an API key<br>
+                2. Paste the key below<br>
+            </p>
+        </div>
+
+        <label for="geminiApiKey" data-i18n="gemini_key_label" style="display: none;">Gemini API Key：</label>
+        <input type="password" id="geminiApiKey" placeholder="AIza..." data-i18n-placeholder="gemini_key_placeholder" style="display: none;">
+
+        <div class="button-group">
+            <button class="primary-btn" id="saveBtn" data-i18n="save_key">Save Key</button>
+            <button class="secondary-btn" id="testBtn" data-i18n="test_conn">Test Connection</button>
+        </div>
+
+        <div id="status" class="status"></div>
     </div>
 
-    <div class="stat-item">
-        <span class="stat-label" data-i18n="explain_selected">Explain selected：</span>
-        <span class="stat-value"><kbd>Ctrl</kbd>+<kbd>E</kbd></span>
-    </div>
-    <div class="stat-item">
-        <span class="stat-label" data-i18n="quick_submission">Quick submission：</span>
-        <span class="stat-value"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span>
-    </div>
-</div>
+    <div class="right-column">
+        <div class="section">
+            <div class="section-title">
+                <span data-i18n="usage_stats">Usage Statistics</span>
+            </div>
 
-<div class="footer">
-    <button class="secondary-btn" id="closeBtn" data-i18n="close">Close</button>
+            <div class="stat-item">
+                <span class="stat-label" data-i18n="time_used_today">Time used today：</span>
+                <span class="stat-value" id="todayUsage">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label" data-i18n="cumulative_usage">Cumulative usage：</span>
+                <span class="stat-value" id="totalUsage">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label" data-i18n="credit_remaining">Credit remaining：</span>
+                <span class="stat-value" id="remainingQuota">≈ 1M token</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">
+                <span data-i18n="hotkeys">Hotkeys</span>
+            </div>
+
+            <div class="stat-item">
+                <span class="stat-label" data-i18n="explain_selected">Explain selected：</span>
+                <span class="stat-value"><kbd>Ctrl</kbd>+<kbd>E</kbd></span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label" data-i18n="quick_submission">Quick submission：</span>
+                <span class="stat-value"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script src="settings.js"></script>
