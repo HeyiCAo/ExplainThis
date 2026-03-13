@@ -5,6 +5,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'openPopup') {
     chrome.action.openPopup();
     sendResponse({ success: true });
+    return true;
+  }
+  if (message.action === 'storeSelection') {
+    const text = message.text || '';
+    chrome.storage.local.set({
+      lastSelectedText: text,
+      shouldAutoFill: true
+    }, () => {
+      chrome.action.openPopup();
+      sendResponse({ success: true });
+    });
+    return true;
   }
   return true;
 });

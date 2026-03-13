@@ -27,6 +27,8 @@ class AIService {
     if (!this.apiKey) throw new Error('Please set up an API key first');
 
     const prompt = this.buildPrompt(text, options);
+    const language = options.language || 'zh';
+    const languageHint = language === 'en' ? 'Use English for the entire response.' : '请全程使用中文回答。';
     try {
       const response = await fetch(`${this.baseURL}/chat/completions`, {
         method: 'POST',
@@ -45,9 +47,7 @@ class AIService {
               1. 第一行用一句话总结
               2. 然后分点详细解释
               3. 最后给出相关例子
-              4.注意：回复语言需要根据后面的输入语言调整。例如如果接下来输入的内容是英语，就用英语回复。
-              5. If the input term is English, reply in English.
-               Input term: `
+              4. ${languageHint}`
             },
             {
               role: 'user',
@@ -79,7 +79,9 @@ class AIService {
   }
 
   buildPrompt(text, options) {
-    let prompt = `请解释：${text}`;
+    const language = options.language || 'zh';
+    const prefix = language === 'en' ? 'Explain:' : '请解释：';
+    let prompt = `${prefix}${text}`;
     if (options.context) prompt += `\n上下文：${options.context}`;
     return prompt;
   }

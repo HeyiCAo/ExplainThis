@@ -123,18 +123,27 @@ class TextSelector {
     console.log('📢 sendToPopup 被调用！文字:', this.selectedText.substring(0, 30));
 
     const text = this.selectedText;
-    chrome.storage.local.set({
-      lastSelectedText: text,
-      shouldAutoFill: true
-    }, () => {
-      console.log('💾 文字已存储，准备打开popup');
-      chrome.runtime.sendMessage({ action: 'openPopup' }, (response) => {
+    const canStore = chrome?.storage?.local?.set;
+    if (canStore) {
+      chrome.storage.local.set({
+        lastSelectedText: text,
+        shouldAutoFill: true
+      }, () => {
+        console.log('💾 文字已存储，准备打开popup');
+        chrome.runtime.sendMessage({ action: 'openPopup' }, () => {
+          if (chrome.runtime.lastError) {
+            console.warn('background不可用，尝试直接打开', chrome.runtime.lastError);
+          }
+        });
+      });
+    } else {
+      console.warn('⚠️ storage.local不可用，改由background处理');
+      chrome.runtime.sendMessage({ action: 'storeSelection', text }, () => {
         if (chrome.runtime.lastError) {
-          console.warn('background不可用，尝试直接打开', chrome.runtime.lastError);
-          chrome.action.openPopup();
+          console.warn('background不可用，无法存储选区', chrome.runtime.lastError);
         }
       });
-    });
+    }
 
     this.removeFloatingButton();
   }

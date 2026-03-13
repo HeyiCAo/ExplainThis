@@ -29,16 +29,20 @@
                 rows="4"
         ></textarea>
 
-        <button id="explainBtn">✨ Ask AI</button>
-    </div>
-
-    <!-- 历史记录 -->
-    <div id="historySection" class="history-section hidden">
-        <div class="history-header">
-            <h3 style="margin: 0;">最近记录</h3>
-            <button id="clearHistoryBtn" class="history-clear">清空</button>
+        <div class="action-row">
+            <div class="action-group" role="group" aria-label="Ask AI with language">
+                <button id="explainBtn" class="ask-btn" type="button">✨ Ask AI</button>
+                <div class="lang-wrap">
+                    <button id="languageToggle" class="lang-toggle" type="button" aria-haspopup="listbox" aria-expanded="false">
+                        ZH
+                    </button>
+                    <div id="languageMenu" class="lang-menu" role="listbox" aria-label="选择解释语言">
+                        <div class="lang-item" role="option" data-value="zh">ZH</div>
+                        <div class="lang-item" role="option" data-value="en">EN</div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div id="historyList" class="history-list"></div>
     </div>
 
     <!-- 结果显示区域 -->
@@ -54,6 +58,15 @@
             <div class="spinner"></div>
             <p>Thinking...</p>
         </div>
+    </div>
+
+    <!-- 历史记录 -->
+    <div id="historySection" class="history-section hidden">
+        <div class="history-header">
+            <h3 style="margin: 0;">最近记录</h3>
+            <button id="clearHistoryBtn" class="history-clear">清空</button>
+        </div>
+        <div id="historyList" class="history-list"></div>
     </div>
 </div>
 

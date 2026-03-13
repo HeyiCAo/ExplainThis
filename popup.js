@@ -126,6 +126,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   const resultContent = document.getElementById('resultContent');
   const loading = document.getElementById('loading');
   const settingsBtn = document.getElementById('settingsBtn');
+  const languageToggle = document.getElementById('languageToggle');
+  const languageMenu = document.getElementById('languageMenu');
   const historySection = document.getElementById('historySection');
   const historyListEl = document.getElementById('historyList');
   const clearHistoryBtn = document.getElementById('clearHistoryBtn');
@@ -136,6 +138,44 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   await loadCacheAndHistory();
+
+  let currentLanguage = 'zh';
+  if (languageToggle) {
+    const storedLang = await getStorage(['explainLang']);
+    if (storedLang.explainLang) {
+      currentLanguage = storedLang.explainLang;
+    }
+    updateLanguageUI(currentLanguage);
+
+    languageToggle.addEventListener('click', (event) => {
+      event.stopPropagation();
+      event.preventDefault();
+      if (!languageMenu) return;
+      const isOpen = languageMenu.classList.contains('open');
+      languageMenu.classList.toggle('open', !isOpen);
+      languageToggle.setAttribute('aria-expanded', String(!isOpen));
+    });
+  }
+
+  if (languageMenu) {
+    languageMenu.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const item = event.target.closest('.lang-item');
+      if (!item) return;
+      const value = item.dataset.value || 'zh';
+      currentLanguage = value;
+      updateLanguageUI(currentLanguage);
+      setStorage({ explainLang: currentLanguage });
+      languageMenu.classList.remove('open');
+      if (languageToggle) languageToggle.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  document.addEventListener('click', () => {
+    if (!languageMenu || !languageToggle) return;
+    languageMenu.classList.remove('open');
+    languageToggle.setAttribute('aria-expanded', 'false');
+  });
 
   // 检查API Key
   chrome.storage.local.get(['apiKey'], (result) => {
@@ -192,12 +232,21 @@ document.addEventListener('DOMContentLoaded', async function() {
       return;
     }
 
-    const key = normalizeKey(text);
-    const cached = cacheTree.get(key);
+    const language = currentLanguage || 'zh';
+    const key = normalizeKey(text, language);
+    let cached = cacheTree.get(key);
+    if (!cached) {
+      const legacyKey = normalizeKey(text);
+      cached = cacheTree.get(legacyKey);
+    }
     if (cached && cached.explanation) {
       showResult(cached.explanation);
       resultSection.classList.remove('hidden');
-      updateHistory(key, cached.text || text);
+      if (cached.language) {
+        currentLanguage = cached.language;
+        updateLanguageUI(currentLanguage);
+      }
+      updateHistory(key, cached.text || text, currentLanguage);
       return;
     }
 
@@ -220,10 +269,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         loading.classList.add('hidden');
         return;
       }
-      const explanation = await service.explainText(text, { detailLevel: 'detailed' });
+      const explanation = await service.explainText(text, { detailLevel: 'detailed', language });
       showResult(explanation);
-      upsertCache(key, text, explanation);
-      updateHistory(key, text);
+      upsertCache(key, text, explanation, language);
+      updateHistory(key, text, language);
       updateUsageStats();
     } catch (error) {
       console.error('AI解释失败：', error);
@@ -242,7 +291,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         showMockResult(text, errorMessage);
-        updateHistory(key, text);
+        updateHistory(key, text, language);
     } finally {
       loading.classList.add('hidden');
     }
@@ -283,9 +332,13 @@ document.addEventListener('DOMContentLoaded', async function() {
       const item = event.target.closest('.history-item');
       if (!item) return;
       const key = item.dataset.key;
-      const cached = cacheTree.get(key);
-      const expandEl = item.querySelector('.history-expand');
       const termText = item.querySelector('.history-term')?.textContent || '';
+      let cached = cacheTree.get(key);
+      if (!cached) {
+        cached = cacheTree.get(normalizeKey(termText));
+      }
+      const expandEl = item.querySelector('.history-expand');
+      const langTag = item.dataset.lang || (cached && cached.language) || 'zh';
 
       Array.from(historyListEl.children).forEach((el) => {
         if (el !== item) el.classList.remove('expanded');
@@ -298,6 +351,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       inputText.value = cached?.text || termText;
       inputText.focus();
+      currentLanguage = langTag;
+      updateLanguageUI(currentLanguage);
       if (cached && cached.explanation) {
         expandEl.innerHTML = cached.explanation;
         showResult(cached.explanation);
@@ -338,8 +393,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     resultContent.innerHTML = mockHtml;
   }
 
-  function normalizeKey(text) {
-    return text.trim();
+  function normalizeKey(text, language) {
+    const base = text.trim();
+    if (!language) return base;
+    return `${base}::${language}`;
   }
 
   function escapeHtml(text) {
@@ -360,20 +417,21 @@ document.addEventListener('DOMContentLoaded', async function() {
     cacheTree = tree;
   }
 
-  function updateHistory(key, text) {
+  function updateHistory(key, text, language) {
     const timestamp = new Date().toLocaleString();
     historyList = historyList.filter((item) => item.key !== key);
     historyList.unshift({
       key,
       text: text.substring(0, 50),
-      timestamp
+      timestamp,
+      language
     });
     if (historyList.length > 10) historyList = historyList.slice(0, 10);
     setStorage({ history: historyList });
     renderHistory();
   }
 
-  function upsertCache(key, text, explanation) {
+  function upsertCache(key, text, explanation, language) {
     const now = Date.now();
     const index = cacheList.findIndex((item) => item.key === key);
     if (index >= 0) {
@@ -381,14 +439,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         ...cacheList[index],
         text: text.substring(0, 200),
         explanation,
-        updatedAt: now
+        updatedAt: now,
+        language
       };
     } else {
       cacheList.unshift({
         key,
         text: text.substring(0, 200),
         explanation,
-        updatedAt: now
+        updatedAt: now,
+        language
       });
     }
     if (cacheList.length > 100) cacheList = cacheList.slice(0, 100);
@@ -414,14 +474,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     historySection.classList.remove('hidden');
     const items = historyList.slice(0, 5);
     historyListEl.innerHTML = items.map((item) => {
-      const key = item.key || normalizeKey(item.text || '');
+      const lang = item.language || 'zh';
+      const key = item.key || normalizeKey(item.text || '', lang);
       if (!key) return '';
       const safeText = escapeHtml(item.text || key);
       const safeTime = escapeHtml(item.timestamp || '');
+      const safeLang = escapeHtml(lang.toUpperCase());
       return `
-        <div class="history-item" data-key="${escapeHtml(key)}">
+        <div class="history-item" data-key="${escapeHtml(key)}" data-lang="${escapeHtml(lang)}">
           <div class="history-item-row">
             <span class="history-term" title="${safeText}">${safeText}</span>
+            <span class="history-lang">${safeLang}</span>
             <span class="history-time">${safeTime}</span>
           </div>
           <div class="history-expand">点击展开</div>
@@ -436,6 +499,15 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   function setStorage(values) {
     return new Promise((resolve) => chrome.storage.local.set(values, resolve));
+  }
+
+  function updateLanguageUI(lang) {
+    if (!languageToggle || !languageMenu) return;
+    languageToggle.textContent = lang.toUpperCase();
+    const items = languageMenu.querySelectorAll('.lang-item');
+    items.forEach((item) => {
+      item.classList.toggle('active', item.dataset.value === lang);
+    });
   }
 
   function updateUsageStats() {
