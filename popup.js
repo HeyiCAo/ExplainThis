@@ -128,6 +128,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   const settingsBtn = document.getElementById('settingsBtn');
   const languageToggle = document.getElementById('languageToggle');
   const languageMenu = document.getElementById('languageMenu');
+  const speedFastBtn = document.getElementById('speedFast');
+  const speedDetailBtn = document.getElementById('speedDetail');
   const historySection = document.getElementById('historySection');
   const historyListEl = document.getElementById('historyList');
   const clearHistoryBtn = document.getElementById('clearHistoryBtn');
@@ -140,6 +142,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   await loadCacheAndHistory();
 
   let currentLanguage = 'zh';
+  let currentSpeed = 'fast';
   if (languageToggle) {
     const storedLang = await getStorage(['explainLang']);
     if (storedLang.explainLang) {
@@ -168,6 +171,24 @@ document.addEventListener('DOMContentLoaded', async function() {
       setStorage({ explainLang: currentLanguage });
       languageMenu.classList.remove('open');
       if (languageToggle) languageToggle.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  if (speedFastBtn && speedDetailBtn) {
+    const storedSpeed = await getStorage(['explainSpeed']);
+    if (storedSpeed.explainSpeed) {
+      currentSpeed = storedSpeed.explainSpeed;
+    }
+    updateSpeedUI(currentSpeed);
+    speedFastBtn.addEventListener('click', () => {
+      currentSpeed = 'fast';
+      updateSpeedUI(currentSpeed);
+      setStorage({ explainSpeed: currentSpeed });
+    });
+    speedDetailBtn.addEventListener('click', () => {
+      currentSpeed = 'detail';
+      updateSpeedUI(currentSpeed);
+      setStorage({ explainSpeed: currentSpeed });
     });
   }
 
@@ -233,7 +254,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     const language = currentLanguage || 'zh';
-    const key = normalizeKey(text, language);
+    const speed = currentSpeed || 'fast';
+    const key = normalizeKey(text, language, speed);
     let cached = cacheTree.get(key);
     if (!cached) {
       const legacyKey = normalizeKey(text);
@@ -246,7 +268,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         currentLanguage = cached.language;
         updateLanguageUI(currentLanguage);
       }
-      updateHistory(key, cached.text || text, currentLanguage);
+      if (cached.speed) {
+        currentSpeed = cached.speed;
+        updateSpeedUI(currentSpeed);
+      }
+      updateHistory(key, cached.text || text, currentLanguage, currentSpeed);
       return;
     }
 
@@ -269,10 +295,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         loading.classList.add('hidden');
         return;
       }
-      const explanation = await service.explainText(text, { detailLevel: 'detailed', language });
+      const explanation = await service.explainText(text, { detailLevel: 'detailed', language, speed });
       showResult(explanation);
-      upsertCache(key, text, explanation, language);
-      updateHistory(key, text, language);
+      upsertCache(key, text, explanation, language, speed);
+      updateHistory(key, text, language, speed);
       updateUsageStats();
     } catch (error) {
       console.error('AI解释失败：', error);
@@ -291,7 +317,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         showMockResult(text, errorMessage);
-        updateHistory(key, text, language);
+        updateHistory(key, text, language, speed);
     } finally {
       loading.classList.add('hidden');
     }
@@ -339,6 +365,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       }
       const expandEl = item.querySelector('.history-expand');
       const langTag = item.dataset.lang || (cached && cached.language) || 'zh';
+      const speedTag = item.dataset.speed || (cached && cached.speed) || 'fast';
 
       Array.from(historyListEl.children).forEach((el) => {
         if (el !== item) el.classList.remove('expanded');
@@ -353,6 +380,8 @@ document.addEventListener('DOMContentLoaded', async function() {
       inputText.focus();
       currentLanguage = langTag;
       updateLanguageUI(currentLanguage);
+      currentSpeed = speedTag;
+      updateSpeedUI(currentSpeed);
       if (cached && cached.explanation) {
         expandEl.innerHTML = cached.explanation;
         showResult(cached.explanation);
@@ -393,10 +422,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     resultContent.innerHTML = mockHtml;
   }
 
-  function normalizeKey(text, language) {
+  function normalizeKey(text, language, speed) {
     const base = text.trim();
     if (!language) return base;
-    return `${base}::${language}`;
+    if (!speed) return `${base}::${language}`;
+    return `${base}::${language}::${speed}`;
   }
 
   function escapeHtml(text) {
@@ -417,21 +447,22 @@ document.addEventListener('DOMContentLoaded', async function() {
     cacheTree = tree;
   }
 
-  function updateHistory(key, text, language) {
+  function updateHistory(key, text, language, speed) {
     const timestamp = new Date().toLocaleString();
     historyList = historyList.filter((item) => item.key !== key);
     historyList.unshift({
       key,
       text: text.substring(0, 50),
       timestamp,
-      language
+      language,
+      speed
     });
     if (historyList.length > 10) historyList = historyList.slice(0, 10);
     setStorage({ history: historyList });
     renderHistory();
   }
 
-  function upsertCache(key, text, explanation, language) {
+  function upsertCache(key, text, explanation, language, speed) {
     const now = Date.now();
     const index = cacheList.findIndex((item) => item.key === key);
     if (index >= 0) {
@@ -440,7 +471,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         text: text.substring(0, 200),
         explanation,
         updatedAt: now,
-        language
+        language,
+        speed
       };
     } else {
       cacheList.unshift({
@@ -448,7 +480,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         text: text.substring(0, 200),
         explanation,
         updatedAt: now,
-        language
+        language,
+        speed
       });
     }
     if (cacheList.length > 100) cacheList = cacheList.slice(0, 100);
@@ -475,13 +508,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     const items = historyList.slice(0, 5);
     historyListEl.innerHTML = items.map((item) => {
       const lang = item.language || 'zh';
-      const key = item.key || normalizeKey(item.text || '', lang);
+      const speed = item.speed || 'fast';
+      const key = item.key || normalizeKey(item.text || '', lang, speed);
       if (!key) return '';
       const safeText = escapeHtml(item.text || key);
       const safeTime = escapeHtml(item.timestamp || '');
       const safeLang = escapeHtml(lang.toUpperCase());
       return `
-        <div class="history-item" data-key="${escapeHtml(key)}" data-lang="${escapeHtml(lang)}">
+        <div class="history-item" data-key="${escapeHtml(key)}" data-lang="${escapeHtml(lang)}" data-speed="${escapeHtml(speed)}">
           <div class="history-item-row">
             <span class="history-term" title="${safeText}">${safeText}</span>
             <span class="history-lang">${safeLang}</span>
@@ -508,6 +542,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     items.forEach((item) => {
       item.classList.toggle('active', item.dataset.value === lang);
     });
+  }
+
+  function updateSpeedUI(speed) {
+    if (!speedFastBtn || !speedDetailBtn) return;
+    speedFastBtn.classList.toggle('active', speed === 'fast');
+    speedDetailBtn.classList.toggle('active', speed === 'detail');
   }
 
   function updateUsageStats() {
