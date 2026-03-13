@@ -10,8 +10,8 @@
     <!-- 标题栏 + 设置按钮 - 修复内联事件 -->
     <div class="header-bar">
         <div>
-            <h1 style="margin: 0; font-size: 22px;">Explain This</h1>
-            <p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.7;">Explain the highlighted contents</p>
+            <h1 style="margin: 0; font-size: 22px;" data-i18n="app_title">Explain This</h1>
+            <p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.7;" data-i18n="app_subtitle">Explain the highlighted contents</p>
         </div>
         <button id="settingsBtn" class="settings-btn" title="Settings">
             ⚙️
@@ -27,11 +27,12 @@
       'Python中的装饰器怎么理解？'
       '这个历史典故有什么背景？'"
                 rows="4"
+                data-i18n-placeholder="input_placeholder"
         ></textarea>
 
         <div class="action-row">
             <div class="action-group" role="group" aria-label="Ask AI with language">
-                <button id="explainBtn" class="ask-btn" type="button">✨ Ask AI</button>
+                <button id="explainBtn" class="ask-btn" type="button" data-i18n="ask_ai">✨ Ask AI</button>
                 <div class="lang-wrap">
                     <button id="languageToggle" class="lang-toggle" type="button" aria-haspopup="listbox" aria-expanded="false">
                         ZH
@@ -45,10 +46,10 @@
         </div>
 
         <div class="speed-row" role="group" aria-label="速度切换">
-            <span class="speed-label">速度</span>
+            <span class="speed-label" data-i18n="speed_label">速度</span>
             <div class="speed-toggle">
-                <button id="speedFast" class="speed-btn" type="button" data-value="fast">快</button>
-                <button id="speedDetail" class="speed-btn" type="button" data-value="detail">详</button>
+                <button id="speedFast" class="speed-btn" type="button" data-value="fast" data-i18n="speed_fast">快</button>
+                <button id="speedDetail" class="speed-btn" type="button" data-value="detail" data-i18n="speed_detail">详</button>
             </div>
         </div>
     </div>
@@ -56,23 +57,23 @@
     <!-- 结果显示区域 -->
     <div id="resultSection" class="result-section hidden">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h3 style="margin: 0;">Results</h3>
-            <span style="font-size: 12px; opacity: 0.5;"> Ctrl+Enter - Quick Explain</span>
+            <h3 style="margin: 0;" data-i18n="results_title">Results</h3>
+            <span style="font-size: 12px; opacity: 0.5;" data-i18n="quick_hint">Ctrl+Enter - Quick Explain</span>
         </div>
         <div id="resultContent">
             <!-- Results will be shown here -->
         </div>
         <div id="loading" class="hidden">
             <div class="spinner"></div>
-            <p>Thinking...</p>
+            <p data-i18n="thinking">Thinking...</p>
         </div>
     </div>
 
     <!-- 历史记录 -->
     <div id="historySection" class="history-section hidden">
         <div class="history-header">
-            <h3 style="margin: 0;">最近记录</h3>
-            <button id="clearHistoryBtn" class="history-clear">清空</button>
+            <h3 style="margin: 0;" data-i18n="history_title">最近记录</h3>
+            <button id="clearHistoryBtn" class="history-clear" data-i18n="clear_history">清空</button>
         </div>
         <div id="historyList" class="history-list"></div>
     </div>

@@ -1,5 +1,6 @@
 // popup.js - 主逻辑
 let aiService = null;
+let currentUiLanguage = 'zh';
 
 const RED = true;
 const BLACK = false;
@@ -144,11 +145,12 @@ document.addEventListener('DOMContentLoaded', async function() {
   let currentLanguage = 'zh';
   let currentSpeed = 'fast';
   if (languageToggle) {
-    const storedLang = await getStorage(['explainLang']);
-    if (storedLang.explainLang) {
-      currentLanguage = storedLang.explainLang;
-    }
+    const storedLang = await getStorage(['explainLang', 'uiLanguage']);
+    if (storedLang.explainLang) currentLanguage = storedLang.explainLang;
+    if (storedLang.uiLanguage) currentUiLanguage = storedLang.uiLanguage;
+    if (!storedLang.uiLanguage && storedLang.explainLang) currentUiLanguage = storedLang.explainLang;
     updateLanguageUI(currentLanguage);
+    applyI18n(currentUiLanguage);
 
     languageToggle.addEventListener('click', (event) => {
       event.stopPropagation();
@@ -167,8 +169,10 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (!item) return;
       const value = item.dataset.value || 'zh';
       currentLanguage = value;
+      currentUiLanguage = value;
       updateLanguageUI(currentLanguage);
-      setStorage({ explainLang: currentLanguage });
+      applyI18n(currentUiLanguage);
+      setStorage({ explainLang: currentLanguage, uiLanguage: currentUiLanguage });
       languageMenu.classList.remove('open');
       if (languageToggle) languageToggle.setAttribute('aria-expanded', 'false');
     });
@@ -249,7 +253,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   explainBtn.addEventListener('click', async function() {
     const text = inputText.value.trim();
     if (!text) {
-      showResult('请输入要解释的内容');
+      showResult(getI18nText('empty_input'));
       return;
     }
 
@@ -267,6 +271,8 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (cached.language) {
         currentLanguage = cached.language;
         updateLanguageUI(currentLanguage);
+        currentUiLanguage = cached.language;
+        applyI18n(currentUiLanguage);
       }
       if (cached.speed) {
         currentSpeed = cached.speed;
@@ -379,7 +385,9 @@ document.addEventListener('DOMContentLoaded', async function() {
       inputText.value = cached?.text || termText;
       inputText.focus();
       currentLanguage = langTag;
+      currentUiLanguage = langTag;
       updateLanguageUI(currentLanguage);
+      applyI18n(currentUiLanguage);
       currentSpeed = speedTag;
       updateSpeedUI(currentSpeed);
       if (cached && cached.explanation) {
@@ -387,7 +395,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         showResult(cached.explanation);
         resultSection.classList.remove('hidden');
       } else {
-        expandEl.innerHTML = '<em>暂无缓存，点击“✨ Ask AI”获取</em>';
+        expandEl.innerHTML = `<em>${getI18nText('no_cache')}</em>`;
       }
       item.classList.add('expanded');
     });
@@ -514,6 +522,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       const safeText = escapeHtml(item.text || key);
       const safeTime = escapeHtml(item.timestamp || '');
       const safeLang = escapeHtml(lang.toUpperCase());
+      const expandLabel = escapeHtml(getI18nText('expand_hint'));
       return `
         <div class="history-item" data-key="${escapeHtml(key)}" data-lang="${escapeHtml(lang)}" data-speed="${escapeHtml(speed)}">
           <div class="history-item-row">
@@ -521,7 +530,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             <span class="history-lang">${safeLang}</span>
             <span class="history-time">${safeTime}</span>
           </div>
-          <div class="history-expand">点击展开</div>
+          <div class="history-expand">${expandLabel}</div>
         </div>
       `;
     }).join('');
@@ -542,6 +551,72 @@ document.addEventListener('DOMContentLoaded', async function() {
     items.forEach((item) => {
       item.classList.toggle('active', item.dataset.value === lang);
     });
+  }
+
+  function applyI18n(lang) {
+    const dict = {
+      zh: {
+        app_title: 'Explain This',
+        app_subtitle: '解释选中的内容',
+        input_placeholder: "粘贴或输入你不懂的内容...\n例如：'内卷是什么意思？'\n      'Python中的装饰器怎么理解？'\n      '这个历史典故有什么背景？'",
+        ask_ai: '✨ Ask AI',
+        speed_label: '速度',
+        speed_fast: '快',
+        speed_detail: '详',
+        results_title: '结果',
+        quick_hint: 'Ctrl+Enter - 快速解释',
+        thinking: '思考中...',
+        history_title: '最近记录',
+        clear_history: '清空',
+        empty_input: '请输入要解释的内容',
+        no_cache: '暂无缓存，点击“✨ Ask AI”获取',
+        expand_hint: '点击展开'
+      },
+      en: {
+        app_title: 'Explain This',
+        app_subtitle: 'Explain highlighted content',
+        input_placeholder: "Paste or type what you don’t understand...\nFor example: 'What is over-competition?'\n      'How to understand Python decorators?'\n      'What’s the background of this story?'",
+        ask_ai: '✨ Ask AI',
+        speed_label: 'Speed',
+        speed_fast: 'Fast',
+        speed_detail: 'Detail',
+        results_title: 'Results',
+        quick_hint: 'Ctrl+Enter - Quick Explain',
+        thinking: 'Thinking...',
+        history_title: 'Recent',
+        clear_history: 'Clear',
+        empty_input: 'Please enter text to explain',
+        no_cache: 'No cache yet. Click “✨ Ask AI” to fetch.',
+        expand_hint: 'Click to expand'
+      }
+    };
+    const map = dict[lang] || dict.zh;
+    document.querySelectorAll('[data-i18n]').forEach((el) => {
+      const key = el.getAttribute('data-i18n');
+      if (map[key]) el.textContent = map[key];
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      if (map[key]) el.setAttribute('placeholder', map[key]);
+    });
+  }
+
+  function getI18nText(key) {
+    const dict = {
+      zh: {
+        empty_input: '请输入要解释的内容',
+        no_cache: '暂无缓存，点击“✨ Ask AI”获取',
+        expand_hint: '点击展开'
+      },
+      en: {
+        empty_input: 'Please enter text to explain',
+        no_cache: 'No cache yet. Click “✨ Ask AI” to fetch.',
+        expand_hint: 'Click to expand'
+      }
+    };
+    const safeLang = typeof currentUiLanguage === 'string' && currentUiLanguage ? currentUiLanguage : 'zh';
+    const map = dict[safeLang] || dict.zh;
+    return map[key] || '';
   }
 
   function updateSpeedUI(speed) {

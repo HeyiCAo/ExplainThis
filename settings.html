@@ -26,6 +26,31 @@
             color: #333;
             display: flex;
             gap: 10px;
+            align-items: center;
+        }
+
+        .lang-switch {
+            margin-left: auto;
+            display: inline-flex;
+            gap: 6px;
+            background: #e9ecef;
+            border-radius: 999px;
+            padding: 4px;
+        }
+
+        .lang-switch button {
+            border: none;
+            background: transparent;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .lang-switch button.active {
+            background: #2582e4;
+            color: #fff;
         }
 
         .section {
@@ -200,6 +225,10 @@
         color: #f8f9fa;
     }
 
+    .lang-switch {
+        background: #30334a;
+    }
+
     .section {
         background: #252a3d;
         box-shadow: 0 4px 12px rgba(0,0,0,0.3); /* 深色模式下阴影稍微加深 */
@@ -273,30 +302,34 @@
 <body>
 <h1>
     <span>⚙️</span>
-    <span>Settings</span>
+    <span data-i18n="settings_title">Settings</span>
+    <span class="lang-switch">
+        <button id="langZh" type="button">ZH</button>
+        <button id="langEn" type="button">EN</button>
+    </span>
 </h1>
 
 <div class="section">
     <div class="section-title">
         <span></span>
-        <span>API Configurations</span>
+        <span data-i18n="api_config">API Configurations</span>
     </div>
 
     <div class="info-box">
-        <strong>DeepSeek API Key Required</strong>
-        <p style="margin: 10px 0 0 0;">
+        <strong data-i18n="api_info_title">DeepSeek API Key Required</strong>
+        <p style="margin: 10px 0 0 0;" data-i18n-html="api_info_body">
             1. Visit <a href="https://platform.deepseek.com/" target="_blank">DeepSeek</a> to register<br>
             2. Navigate to the "API Keys" page to create new keys<br>
             3. Paste the key below<br>
         </p>
     </div>
 
-    <label for="apiKey">API Key：</label>
-    <input type="password" id="apiKey" placeholder="sk-...">
+    <label for="apiKey" data-i18n="api_key_label">API Key：</label>
+    <input type="password" id="apiKey" placeholder="sk-..." data-i18n-placeholder="api_key_placeholder">
 
     <div class="button-group">
-        <button class="primary-btn" id="saveBtn">Save Key</button>
-        <button class="secondary-btn" id="testBtn">Test Connection</button>
+        <button class="primary-btn" id="saveBtn" data-i18n="save_key">Save Key</button>
+        <button class="secondary-btn" id="testBtn" data-i18n="test_conn">Test Connection</button>
     </div>
 
     <div id="status" class="status"></div>
@@ -304,40 +337,40 @@
 
 <div class="section">
     <div class="section-title">
-        <span>Usage Statistics</span>
+        <span data-i18n="usage_stats">Usage Statistics</span>
     </div>
 
     <div class="stat-item">
-        <span class="stat-label">Time used today：</span>
+        <span class="stat-label" data-i18n="time_used_today">Time used today：</span>
         <span class="stat-value" id="todayUsage">0</span>
     </div>
     <div class="stat-item">
-        <span class="stat-label">Cumulative usage：</span>
+        <span class="stat-label" data-i18n="cumulative_usage">Cumulative usage：</span>
         <span class="stat-value" id="totalUsage">0</span>
     </div>
     <div class="stat-item">
-        <span class="stat-label">Credit remaining：</span>
+        <span class="stat-label" data-i18n="credit_remaining">Credit remaining：</span>
         <span class="stat-value" id="remainingQuota">≈ 1M token</span>
     </div>
 </div>
 
 <div class="section">
     <div class="section-title">
-        <span>Hotkeys</span>
+        <span data-i18n="hotkeys">Hotkeys</span>
     </div>
 
     <div class="stat-item">
-        <span class="stat-label">Explain selected：</span>
+        <span class="stat-label" data-i18n="explain_selected">Explain selected：</span>
         <span class="stat-value"><kbd>Ctrl</kbd>+<kbd>E</kbd></span>
     </div>
     <div class="stat-item">
-        <span class="stat-label">Quick submission：</span>
+        <span class="stat-label" data-i18n="quick_submission">Quick submission：</span>
         <span class="stat-value"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span>
     </div>
 </div>
 
 <div class="footer">
-    <button class="secondary-btn" id="closeBtn">Close</button>
+    <button class="secondary-btn" id="closeBtn" data-i18n="close">Close</button>
 </div>
 
 <script src="settings.js"></script>
