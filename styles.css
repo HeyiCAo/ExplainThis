@@ -88,6 +88,33 @@ button:active {
     max-height: 300px;
 }
 
+#resultContent {
+    line-height: 1.6;
+    font-size: 14px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    font-variant-ligatures: none;
+    font-variant-numeric: lining-nums;
+    font-feature-settings: "tnum" 1;
+    font-family: "STIX Two Text", "STIX Two Math", "Noto Sans Math", "Cambria Math",
+        "Segoe UI Symbol", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+#resultContent code,
+#resultContent pre {
+    font-family: "SFMono-Regular", "Menlo", "Consolas", "Liberation Mono", monospace;
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+#resultContent pre {
+    white-space: pre-wrap;
+    background: rgba(0, 0, 0, 0.04);
+    padding: 10px 12px;
+    border-radius: 10px;
+}
+
 .hidden {
     display: none !important;
 }
@@ -130,6 +157,9 @@ button:active {
         background: #2a3042;
         border-color: #3a4055;
         color: #fff;
+    }
+    #resultContent pre {
+        background: rgba(255, 255, 255, 0.06);
     }
     #loading {
         color: #aaa;

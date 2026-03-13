@@ -1,4 +1,4 @@
-// api-service.js - AI API服务（只定义类，不创建实例）
+// api-service.js
 class AIService {
   constructor() {
     this.apiKey = null;
@@ -24,7 +24,7 @@ class AIService {
 
   async explainText(text, options = {}) {
     await this.loadApiKey();
-    if (!this.apiKey) throw new Error('请先配置API密钥');
+    if (!this.apiKey) throw new Error('Please set up an API key first');
 
     const prompt = this.buildPrompt(text, options);
     try {
@@ -44,9 +44,10 @@ class AIService {
               格式要求：
               1. 第一行用一句话总结
               2. 然后分点详细解释
-              3. 最后给出相关例子`
-              注意：
-              回复语言需要根据后面的输入语言调整。例如如果输入的内容是英语，就用英语回复。
+              3. 最后给出相关例子
+              4.注意：回复语言需要根据后面的输入语言调整。例如如果接下来输入的内容是英语，就用英语回复。
+              5. If the input term is English, reply in English.
+               Input term: `
             },
             {
               role: 'user',
@@ -66,13 +67,13 @@ class AIService {
         } catch {
           errorDetail = await response.text();
         }
-        throw new Error(`API调用失败 (HTTP ${response.status}): ${errorDetail}`);
+        throw new Error(`API Call Failure (HTTP ${response.status}): ${errorDetail}`);
       }
 
       const data = await response.json();
       return this.formatExplanation(data.choices[0].message.content);
     } catch (error) {
-      console.error('AI解释详细错误：', error);
+      console.error('Error!：', error);
       throw error;
     }
   }
