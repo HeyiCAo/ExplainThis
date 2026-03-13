@@ -135,14 +135,69 @@ class AIService {
   }
 
   formatExplanation(explanation) {
-    const html = explanation
+    const safe = this.escapeHtml(explanation);
+    const html = safe
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/`(.*?)`/g, '<code>$1</code>')
       .replace(/\n/g, '<br>')
-      .replace(/📌/g, '<span style="color: #4da3ff;">📌</span>')
-      .replace(/💡/g, '<span style="color: #ffaa00;">💡</span>');
-    return this.renderMath(html);
+      .replace(/📌/g, '<span class="icon-pin">📌</span>')
+      .replace(/💡/g, '<span class="icon-tip">💡</span>');
+    const rendered = this.renderMath(html);
+    return this.sanitizeHtml(rendered);
+  }
+
+  escapeHtml(text) {
+    const s = String(text ?? '');
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  sanitizeHtml(html) {
+    const allowedTags = new Set([
+      'strong', 'em', 'code', 'br', 'span', 'div', 'sub', 'sup'
+    ]);
+    const allowedClass = new Set([
+      'icon-pin', 'icon-tip',
+      'math-inline', 'math-display', 'frac', 'num', 'den', 'op'
+    ]);
+
+    const template = document.createElement('template');
+    template.innerHTML = html;
+
+    const walk = (node) => {
+      const children = Array.from(node.childNodes);
+      children.forEach((child) => {
+        if (child.nodeType === Node.ELEMENT_NODE) {
+          const tag = child.tagName.toLowerCase();
+          if (!allowedTags.has(tag)) {
+            const text = document.createTextNode(child.textContent || '');
+            child.replaceWith(text);
+            return;
+          }
+          Array.from(child.attributes).forEach((attr) => {
+            if (attr.name === 'class') {
+              const classes = attr.value.split(/\s+/).filter((c) => allowedClass.has(c));
+              if (classes.length) {
+                child.setAttribute('class', classes.join(' '));
+              } else {
+                child.removeAttribute('class');
+              }
+            } else {
+              child.removeAttribute(attr.name);
+            }
+          });
+          walk(child);
+        }
+      });
+    };
+
+    walk(template.content);
+    return template.innerHTML;
   }
 
   renderMath(html) {

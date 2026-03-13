@@ -362,6 +362,14 @@ button:active {
     border-radius: 10px;
 }
 
+.icon-pin {
+    color: #4da3ff;
+}
+
+.icon-tip {
+    color: #ffaa00;
+}
+
 .math-inline {
     font-family: "STIX Two Math", "Noto Sans Math", "Cambria Math", "STIX Two Text",
         "Segoe UI Symbol", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;

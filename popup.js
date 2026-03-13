@@ -414,12 +414,13 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   function showMockResult(text, errorMsg = '') {
+    const safeText = escapeHtml(text);
     const mockHtml = `
       <div style="color: #333; line-height: 1.6; padding: 15px;">
         <h4 style="margin-top: 0; color: #4da3ff;">📝 您查询的是：</h4>
-        <p style="background: #f5f5f5; padding: 10px; border-radius: 5px;">${text}</p>
+        <p style="background: #f5f5f5; padding: 10px; border-radius: 5px;">${safeText}</p>
         <h4 style="color: #4da3ff; margin-top: 20px;">🤖 模拟解释：</h4>
-        <p>这是"${text.substring(0, 30)}..."的模拟解释。</p>
+        <p>这是"${safeText.substring(0, 30)}..."的模拟解释。</p>
         <p>连接真实AI后，会给出更详细、准确的答案。</p>
         ${errorMsg ? `<div style="margin-top: 20px; padding: 10px; background: #f8d7da; border-radius: 5px; color: #721c24;">⚠️ ${errorMsg}</div>` : ''}
         <div style="margin-top: 20px; padding: 10px; background: #e8f4ff; border-radius: 5px; font-size: 13px;">
