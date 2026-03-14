@@ -555,6 +555,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   function applyI18n(lang) {
+    const isMac = navigator.platform && /mac/i.test(navigator.platform);
+    const modKey = isMac ? 'Cmd' : 'Ctrl';
     const dict = {
       zh: {
         app_title: 'Explain This',
@@ -565,7 +567,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         speed_fast: '快',
         speed_detail: '详',
         results_title: '结果',
-        quick_hint: 'Ctrl+Enter - 快速解释',
+        quick_hint: `${modKey}+Enter - 快速解释`,
         thinking: '思考中...',
         history_title: '最近记录',
         clear_history: '清空',
@@ -582,7 +584,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         speed_fast: 'Fast',
         speed_detail: 'Detail',
         results_title: 'Results',
-        quick_hint: 'Ctrl+Enter - Quick Explain',
+        quick_hint: `${modKey}+Enter - Quick Explain`,
         thinking: 'Thinking...',
         history_title: 'Recent',
         clear_history: 'Clear',
@@ -627,9 +629,19 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   function updateUsageStats() {
-    chrome.storage.local.get(['usageCount'], (result) => {
+    chrome.storage.local.get(['usageCount', 'todayUsage', 'lastUsageDate'], (result) => {
       const count = (result.usageCount || 0) + 1;
-      chrome.storage.local.set({ usageCount: count });
+      const today = new Date().toDateString();
+      let todayCount = result.todayUsage || 0;
+      if (result.lastUsageDate !== today) {
+        todayCount = 0;
+      }
+      todayCount += 1;
+      chrome.storage.local.set({
+        usageCount: count,
+        todayUsage: todayCount,
+        lastUsageDate: today
+      });
     });
   }
 });

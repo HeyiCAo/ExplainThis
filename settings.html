@@ -475,14 +475,22 @@
             </div>
         </div>
 
-        <div class="info-box" id="deepseekInfoBox">
-            <strong data-i18n="api_info_title">DeepSeek API Key Required</strong>
-            <p style="margin: 10px 0 0 0;" data-i18n-html="api_info_body">
-                1. Visit <a href="https://platform.deepseek.com/" target="_blank">DeepSeek</a> to register<br>
-                2. Navigate to the "API Keys" page to create new keys<br>
-                3. Paste the key below<br>
-            </p>
-        </div>
+    <div class="info-box" id="deepseekInfoBox">
+        <strong data-i18n="api_info_title">DeepSeek API Key Required</strong>
+        <p style="margin: 10px 0 0 0;" data-i18n-html="api_info_body">
+            1. Visit <a href="https://platform.deepseek.com/" target="_blank">DeepSeek</a> to register<br>
+            2. Navigate to the "API Keys" page to create new keys<br>
+            3. Paste the key below<br>
+        </p>
+    </div>
+
+    <div class="info-box">
+        <strong data-i18n="data_notice_title">Data Notice</strong>
+        <p style="margin: 8px 0 0 0;" data-i18n-html="data_notice_body">
+            Selected text will be sent to your chosen AI provider to generate explanations.
+            See our <a href="privacy-policy.md" target="_blank">Privacy Policy</a>.
+        </p>
+    </div>
 
         <label for="apiKey" data-i18n="api_key_label">API Key：</label>
         <input type="password" id="apiKey" placeholder="sk-..." data-i18n-placeholder="api_key_placeholder">
@@ -533,11 +541,11 @@
 
         <div class="stat-item">
             <span class="stat-label" data-i18n="explain_selected">Explain selected：</span>
-            <span class="stat-value"><kbd>Ctrl</kbd>+<kbd>E</kbd></span>
+            <span class="stat-value" id="hotkeyExplainValue"><kbd>Ctrl</kbd>+<kbd>E</kbd></span>
         </div>
         <div class="stat-item">
             <span class="stat-label" data-i18n="quick_submission">Quick submission：</span>
-            <span class="stat-value"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span>
+            <span class="stat-value" id="hotkeyQuickValue"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span>
         </div>
     </div>
     </div>

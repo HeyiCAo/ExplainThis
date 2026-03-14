@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const closeBtn = document.getElementById('closeBtn');
   const langZh = document.getElementById('langZh');
   const langEn = document.getElementById('langEn');
+  const hotkeyExplainValue = document.getElementById('hotkeyExplainValue');
+  const hotkeyQuickValue = document.getElementById('hotkeyQuickValue');
   let currentUiLanguage = 'zh';
   let currentProvider = 'deepseek';
 
@@ -28,6 +30,8 @@ document.addEventListener('DOMContentLoaded', function() {
       gemini_info_body: '1. 访问 <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a> 获取 API Key<br>2. 粘贴到下方输入框<br>',
       gemini_key_label: 'Gemini API Key：',
       gemini_key_placeholder: 'AIza...',
+      data_notice_title: '数据说明',
+      data_notice_body: '选中文本会发送到你选择的 AI 服务用于生成解释。查看 <a href="privacy-policy.md" target="_blank">隐私政策</a>。',
       save_key: '保存密钥',
       test_conn: '测试连接',
       usage_stats: '使用统计',
@@ -57,6 +61,8 @@ document.addEventListener('DOMContentLoaded', function() {
       gemini_info_body: '1. Visit <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a> to get an API key<br>2. Paste the key below<br>',
       gemini_key_label: 'Gemini API Key:',
       gemini_key_placeholder: 'AIza...',
+      data_notice_title: 'Data Notice',
+      data_notice_body: 'Selected text will be sent to your chosen AI provider to generate explanations. See our <a href="privacy-policy.md" target="_blank">Privacy Policy</a>.',
       save_key: 'Save Key',
       test_conn: 'Test Connection',
       usage_stats: 'Usage Statistics',
@@ -82,6 +88,7 @@ document.addEventListener('DOMContentLoaded', function() {
     currentProvider = result.provider || 'deepseek';
     if (result.uiLanguage) currentUiLanguage = result.uiLanguage;
     applyI18n(currentUiLanguage);
+    updateHotkeyLabels();
     updateProviderUI();
     updateProviderMenu();
     document.getElementById('totalUsage').textContent = result.usageCount || 0;
@@ -229,10 +236,18 @@ document.addEventListener('DOMContentLoaded', function() {
       langZh.classList.toggle('active', lang === 'zh');
       langEn.classList.toggle('active', lang === 'en');
     }
+    updateHotkeyLabels();
   }
 
   function getText(key) {
     const map = i18n[currentUiLanguage] || i18n.zh;
     return map[key] || '';
+  }
+
+  function updateHotkeyLabels() {
+    const isMac = navigator.platform && /mac/i.test(navigator.platform);
+    const modKey = isMac ? 'Cmd' : 'Ctrl';
+    if (hotkeyExplainValue) hotkeyExplainValue.innerHTML = `<kbd>${modKey}</kbd>+<kbd>E</kbd>`;
+    if (hotkeyQuickValue) hotkeyQuickValue.innerHTML = `<kbd>${modKey}</kbd>+<kbd>Enter</kbd>`;
   }
 });
